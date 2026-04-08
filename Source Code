@@ -1,0 +1,32 @@
+module sync_ram #(
+    parameter DATA_WIDTH = 8, // Word size
+    parameter ADDR_WIDTH = 4  // Address width, determines depth (2^ADDR_WIDTH)
+) (
+    input clk,                // Clock signal (all operations synchronous)
+    input we,                 // Write enable (active high)
+    input re,                 // Read enable (active high)
+    input [ADDR_WIDTH-1:0] addr, // Address input
+    input [DATA_WIDTH-1:0] din,  // Data input for writing
+    output reg [DATA_WIDTH-1:0] dout  // Data output for reading
+);
+
+    // Calculate memory depth
+    localparam DEPTH = 1 << ADDR_WIDTH;
+
+    // Declare the memory array as a register type
+    reg [DATA_WIDTH-1:0] mem [0:DEPTH-1];
+
+    // Synchronous memory operations
+    always @(posedge clk) begin
+        if (we) begin
+            // Write operation: data is stored into memory at the address on the clock edge
+            mem[addr] <= din;
+        end
+        
+        // Read operation: data is output from memory on the clock edge
+        if (re) begin
+            dout <= mem[addr];
+        end
+    end
+
+endmodule

@@ -1,0 +1,78 @@
+module tb_sync_ram;
+
+    // Testbench parameters (must match or be compatible with DUT parameters)
+    parameter ADDR_WIDTH = 4;
+    parameter DATA_WIDTH = 8;
+    localparam DEPTH = 1 << ADDR_WIDTH;
+
+    // Testbench signals
+    reg clk, we, re;
+    reg [ADDR_WIDTH-1:0] addr;
+    reg [DATA_WIDTH-1:0] din;
+    wire [DATA_WIDTH-1:0] dout;
+    
+    integer i; // Loop variable
+
+    // Instantiate the DUT (Design Under Test)
+    sync_ram #(.DATA_WIDTH(DATA_WIDTH), .ADDR_WIDTH(ADDR_WIDTH)) dut (
+        .clk(clk),
+        .we(we),
+        .re(re),
+        .addr(addr),
+        .din(din),
+        .dout(dout)
+    );
+
+    // Clock generator
+    initial begin
+        clk = 0;
+        forever #5 clk = ~clk; // Clock period of 10 time units
+    end
+
+    // Stimulus generator
+    initial begin
+        // Initialize signals
+        we = 0;
+        re = 0;
+        addr = 0;
+        din = 0;
+
+        // Wait for a few clock cycles
+        repeat (2) @(posedge clk);
+
+        // *** Write phase ***
+        $display("--- Starting Write Cycle ---");
+        we = 1;
+        for (i = 0; i < DEPTH; i = i + 1) begin
+            @(posedge clk) begin
+                addr = i;
+                din = $random; // Write random data
+                $display("Time %0t: Writing data %h to address %h", $time, din, addr);
+            end
+        end
+        we = 0;
+        
+        repeat (2) @(posedge clk);
+
+        // *** Read phase ***
+        $display("--- Starting Read Cycle ---");
+        re = 1;
+        for (i = 0; i < DEPTH; i = i + 1) begin
+            @(posedge clk) begin
+                addr = i;
+                $display("Time %0t: Reading data %h from address %h", $time, dout, addr);
+            end
+        end
+        re = 0;
+
+        // Finish simulation
+        #10 $finish;
+    end
+
+    // Waveform dumping (for use with EPWave on EDA Playground)
+    initial begin
+        $dumpfile("dump.vcd");
+        $dumpvars(0, tb_sync_ram);
+    end
+
+endmodule
